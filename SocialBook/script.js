@@ -1,24 +1,54 @@
-// script.js — classroom demo only: data is kept in the browser, NOT secure.
+// script.js — accounts and profiles stored online with Firebase.
 
-const USERS_KEY = "socialbookUsers";
-const SESSION_KEY = "socialbookCurrentUser";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// ===== PASTE YOUR FIREBASE CONFIG HERE =====
+const firebaseConfig = {
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  projectId: "PASTE_HERE",
+  storageBucket: "PASTE_HERE",
+  messagingSenderId: "PASTE_HERE",
+  appId: "PASTE_HERE"
+};
+// ===========================================
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // ---------- Helpers ----------
-function getUsers() {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
-
-function saveUsers(users) {
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-}
-
 function showMessage(el, text, isError = true) {
   el.textContent = text;
   el.style.color = isError ? "crimson" : "green";
+}
+
+function friendlyError(err) {
+  switch (err.code) {
+    case "auth/email-already-in-use": return "That email is already registered.";
+    case "auth/weak-password": return "Password must be at least 8 characters.";
+    case "auth/invalid-email": return "Please enter a valid email address.";
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found": return "Incorrect email or password.";
+    case "auth/too-many-requests": return "Too many attempts. Try again later.";
+    case "auth/network-request-failed": return "Network problem. Check your internet.";
+    default: return "Error: " + (err.code || err.message);
+  }
 }
 
 // ---------- Register ----------
@@ -27,7 +57,7 @@ const registerForm = document.getElementById("registerForm");
 if (registerForm) {
   const registerMessage = document.getElementById("registerMessage");
 
-  registerForm.addEventListener("submit", (e) => {
+  registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const firstName = document.getElementById("firstName").value.trim();
@@ -43,18 +73,17 @@ if (registerForm) {
       return;
     }
 
-    const users = getUsers();
-    if (users.some((u) => u.email === email)) {
-      showMessage(registerMessage, "That email is already registered.");
-      return;
+    try {
+      showMessage(registerMessage, "Creating account...", false);
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, "users", cred.user.uid), {
+        firstName, lastName, birthday, gender, email
+      });
+      showMessage(registerMessage, "Account created! Redirecting...", false);
+      setTimeout(() => (window.location.href = "profile.html"), 1000);
+    } catch (err) {
+      showMessage(registerMessage, friendlyError(err));
     }
-
-    users.push({ firstName, lastName, birthday, gender, email, password });
-    saveUsers(users);
-
-    showMessage(registerMessage, "Account created! Redirecting to login...", false);
-    registerForm.reset();
-    setTimeout(() => (window.location.href = "index.html"), 1200);
   });
 }
 
@@ -64,23 +93,20 @@ const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   const loginMessage = document.getElementById("loginMessage");
 
-  loginForm.addEventListener("submit", (e) => {
+  loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const email = document.getElementById("loginEmail").value.trim().toLowerCase();
     const password = document.getElementById("loginPassword").value;
 
-    const user = getUsers().find((u) => u.email === email && u.password === password);
-
-    if (!user) {
-      showMessage(loginMessage, "Incorrect email or password.");
-      return;
+    try {
+      showMessage(loginMessage, "Logging in...", false);
+      await signInWithEmailAndPassword(auth, email, password);
+      showMessage(loginMessage, "Welcome back!", false);
+      setTimeout(() => (window.location.href = "profile.html"), 600);
+    } catch (err) {
+      showMessage(loginMessage, friendlyError(err));
     }
-
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ email: user.email }));
-
-    showMessage(loginMessage, `Welcome back, ${user.firstName}!`, false);
-    setTimeout(() => (window.location.href = "profile.html"), 800);
   });
 }
 
@@ -88,31 +114,48 @@ if (loginForm) {
 const profileName = document.getElementById("profileName");
 
 if (profileName) {
-  const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null");
-  const user = session && getUsers().find((u) => u.email === session.email);
+  const profileImage = document.getElementById("profileImage");
+  const profileInitial = document.getElementById("profileInitial");
+  const photoInput = document.getElementById("photoInput");
 
-  if (!user) {
-    window.location.href = "index.html";
-  } else {
-    profileName.textContent = `${user.firstName} ${user.lastName}`;
-    document.getElementById("profileInitial").textContent = user.firstName.charAt(0).toUpperCase();
-    document.getElementById("profileEmail").textContent = user.email;
-    document.getElementById("profileBirthday").textContent = user.birthday;
-    document.getElementById("profileGender").textContent = user.gender;
+  function showPhoto(src) {
+    profileImage.src = src;
+    profileImage.hidden = false;
+    profileImage.style.display = "block";
+    profileInitial.style.display = "none";
+  }
 
-    // Profile picture
-    const profileImage = document.getElementById("profileImage");
-    const profileInitial = document.getElementById("profileInitial");
-    const photoInput = document.getElementById("photoInput");
-
-    function showPhoto(src) {
-      profileImage.src = src;
-      profileImage.hidden = false;
-      profileInitial.hidden = true;
+  onAuthStateChanged(auth, async (firebaseUser) => {
+    // Not logged in -> back to login page
+    if (!firebaseUser) {
+      window.location.href = "index.html";
+      return;
     }
 
-    if (user.photo) showPhoto(user.photo);
+    const userRef = doc(db, "users", firebaseUser.uid);
+    let data;
+    try {
+      const snap = await getDoc(userRef);
+      data = snap.exists() ? snap.data() : null;
+    } catch (err) {
+      alert("Could not load your profile: " + err.message);
+      return;
+    }
 
+    if (!data) {
+      alert("Profile data not found for this account.");
+      return;
+    }
+
+    profileName.textContent = `${data.firstName} ${data.lastName}`;
+    profileInitial.textContent = data.firstName.charAt(0).toUpperCase();
+    document.getElementById("profileEmail").textContent = data.email;
+    document.getElementById("profileBirthday").textContent = data.birthday;
+    document.getElementById("profileGender").textContent = data.gender;
+
+    if (data.photo) showPhoto(data.photo);
+
+    // Change profile picture
     photoInput.addEventListener("change", () => {
       const file = photoInput.files[0];
       if (!file) return;
@@ -122,8 +165,8 @@ if (profileName) {
       reader.onload = () => {
         const img = new Image();
         img.onerror = () => alert("That image type isn't supported. Try a JPG or PNG.");
-        img.onload = () => {
-          // Crop to a square and shrink so it fits in storage
+        img.onload = async () => {
+          // Crop to a square and shrink so it stays small
           const size = 200;
           const canvas = document.createElement("canvas");
           canvas.width = canvas.height = size;
@@ -133,14 +176,11 @@ if (profileName) {
           );
           const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
 
+          showPhoto(dataUrl);
           try {
-            const users = getUsers();
-            const i = users.findIndex((u) => u.email === user.email);
-            users[i].photo = dataUrl;
-            saveUsers(users);
-            showPhoto(dataUrl);
+            await updateDoc(userRef, { photo: dataUrl });
           } catch (err) {
-            alert("Could not save the photo: " + err.message);
+            alert("Photo shown but NOT saved: " + err.message);
           }
           photoInput.value = "";
         };
@@ -148,54 +188,11 @@ if (profileName) {
       };
       reader.readAsDataURL(file);
     });
-  }
+  });
 
   // Log out
-  document.getElementById("logoutBtn").addEventListener("click", () => {
-    sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await signOut(auth);
     window.location.href = "index.html";
-  });
-}
-// ---------- Export / Import accounts ----------
-const exportBtn = document.getElementById("exportBtn");
-const importInput = document.getElementById("importInput");
-
-if (exportBtn) {
-  exportBtn.addEventListener("click", () => {
-    const blob = new Blob([JSON.stringify(getUsers(), null, 2)], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "socialbook-accounts.json";
-    a.click();
-    URL.revokeObjectURL(a.href);
-  });
-}
-
-if (importInput) {
-  importInput.addEventListener("change", () => {
-    const file = importInput.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const imported = JSON.parse(reader.result);
-        if (!Array.isArray(imported)) throw new Error("Wrong file format");
-
-        const users = getUsers();
-        imported.forEach((u) => {
-          if (!u.email) return;
-          const i = users.findIndex((x) => x.email === u.email);
-          if (i === -1) users.push(u);
-          else users[i] = u; // overwrite so the photo and latest details come along
-        });
-        saveUsers(users);
-        alert("Accounts imported. You can log in now.");
-      } catch (err) {
-        alert("Could not import: " + err.message);
-      }
-      importInput.value = "";
-    };
-    reader.readAsText(file);
   });
 }
