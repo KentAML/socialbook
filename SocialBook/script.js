@@ -18,12 +18,12 @@ import {
 
 // ===== PASTE YOUR FIREBASE CONFIG HERE =====
 const firebaseConfig = {
-  apiKey: "PASTE_HERE",
-  authDomain: "PASTE_HERE",
-  projectId: "PASTE_HERE",
-  storageBucket: "PASTE_HERE",
-  messagingSenderId: "PASTE_HERE",
-  appId: "PASTE_HERE"
+  apiKey: "AIzaSyAmy2FJ_TL0dxYGuBDbTwD2FArk7eqWC9Q",
+  authDomain: "socialbook-3d72e.firebaseapp.com",
+  projectId: "socialbook-3d72e",
+  storageBucket: "socialbook-3d72e.firebasestorage.app",
+  messagingSenderId: "492197121174",
+  appId: "1:492197121174:web:d242f723941183b41686b7"
 };
 // ===========================================
 
