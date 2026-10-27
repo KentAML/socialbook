@@ -1,0 +1,77 @@
+/* External CSS shared by all three HTML pages */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #1c1e21; }
+a { color: #0866ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+.logo { font-size: 52px; color: #0866ff; letter-spacing: -2px; margin: 0 0 15px; }
+.login-container { min-height: 90vh; display: flex; align-items: center; justify-content: center; gap: 70px; padding: 40px 24px; }
+.intro { max-width: 500px; }
+.intro h2 { font-size: 29px; line-height: 1.25; font-weight: 400; }
+.intro p { color: #606770; }
+.login-box, .register-box, .profile-card { background: white; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px #00000016; }
+.login-box { width: 390px; max-width: 100%; }
+.login-box h2 { font-size: 20px; text-align: center; }
+label { display: block; font-size: 13px; font-weight: bold; color: #444; margin: 13px 0 6px; }
+input, select { display: block; width: 100%; padding: 13px; border: 1px solid #ccd0d5; border-radius: 7px; font: inherit; background: white; }
+input:focus, select:focus { outline: 2px solid #86b7ff; border-color: #0866ff; }
+button, .btn-outline { cursor: pointer; display: block; width: 100%; text-align: center; border: 0; border-radius: 7px; padding: 13px; font-size: 16px; font-weight: bold; margin-top: 16px; }
+.btn-primary { background: #0866ff; color: white; }
+.btn-success { background: #42b72a; color: white; }
+.btn-outline { background: #e8f1ff; border: 1px solid #0866ff; color: #0866ff; }
+button:hover { filter: brightness(.94); }
+hr { border: 0; border-top: 1px solid #ddd; margin: 22px 0; }
+.message { min-height: 22px; font-size: 14px; text-align: center; }
+.message.error { color: #c62828; }
+.message.success { color: #207a20; }
+.register-container { min-height: 90vh; display: flex; justify-content: center; align-items: center; padding: 30px 15px; }
+.register-box { width: 480px; max-width: 100%; }
+.register-box .logo { font-size: 38px; text-align: center; }
+.register-box h2, .register-box > p { text-align: center; margin: 8px 0; }
+.name-row { display: flex; gap: 12px; }
+.name-row > div { flex: 1; min-width: 0; }
+.back-link { display: block; text-align: center; margin-top: 18px; }
+.profile-header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 12px 30px; box-shadow: 0 2px 6px #00000012; }
+.profile-header h2 { color: #0866ff; margin: 0; }
+.btn-logout { width: auto; margin: 0; padding: 10px 18px; background: #e4e6eb; color: #222; }
+.profile-container { min-height: 75vh; display: flex; align-items: center; justify-content: center; padding: 35px 15px; }
+.profile-card { width: 460px; max-width: 100%; text-align: center; }
+.profile-card > p { overflow-wrap: anywhere; }
+
+/* Avatar (profile picture) */
+.avatar {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  background: #0866ff;
+  color: white;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  font-size: 42px;
+  font-weight: bold;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.avatar img[hidden], .avatar span[hidden] { display: none; }
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 14px;
+  font-weight: normal;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+}
+.avatar:hover .avatar-overlay { opacity: 1; }
+
+.profile-card h3 { text-align: left; }
+.profile-card p:has(strong) { text-align: left; }
+footer { padding: 14px; color: #65676b; font-size: 12px; text-align: center; }
+@media (max-width: 760px) { .login-container { flex-direction: column; gap: 18px; } .intro { text-align: center; } .intro h2 { font-size: 22px; } .name-row { flex-direction: column; gap: 0; } }
